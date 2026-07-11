@@ -1,54 +1,54 @@
 import React from 'react';
+import Link from 'next/link';
 
 const Footer = ({ footerImg }) => {
     return (
         <footer className="main-footer">
             <div className="footer-container">
                 <div className="footer-col">
-                    <h3>Important Links</h3>
+                    <h3>Quick Links</h3>
                     <ul>
-                        <li><a href="#">Contact Us</a></li>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Products</a></li>
-                        <li><a href="#">Industry</a></li>
-
+                        <li><Link href="/">Home</Link></li>
+                        <li><Link href="/about">About Us</Link></li>
+                        <li><Link href="/blogs">Blog</Link></li>
+                        <li><Link href="/contact">Contact Us</Link></li>
+                        <li><a href="/#career">Career</a></li>
                     </ul>
                 </div>
                 <div className="footer-col">
                     <h3>Services</h3>
                     <ul>
-                        <li><a href="#">UI/UX Design</a></li>
-                        <li><a href="#">Web Design</a></li>
-                        <li><a href="#">Logo & Branding</a></li>
-                        <li><a href="#">Webflow Design</a></li>
-                        <li><a href="#">Framer Design</a></li>
+                        <li><a href="/#services">AI Branding</a></li>
+                        <li><a href="/#services">Logo Design</a></li>
+                        <li><a href="/#services">Web Design</a></li>
+                        <li><a href="/#services">AI Content</a></li>
+                        <li><a href="/#services">Social Media Management</a></li>
                     </ul>
                 </div>
                 <div className="footer-col">
-                    <h3>Specialized Industry</h3>
+                    <h3>Company</h3>
                     <ul>
-                        <li><a href="#">Fintech Industry</a></li>
-                        <li><a href="#">Healthcare & Fitness Industry</a></li>
-                        <li><a href="#">Edtech Industry</a></li>
-                        <li><a href="#">Cybersecurity Industry</a></li>
+                        <li><a href="/#testimonials">Meet the Team</a></li>
+                        <li><a href="/#pricing">Pricing</a></li>
+                        <li><a href="/#why-choose-us">Why Garuda?</a></li>
+                        <li><Link href="/contact">Start a Project</Link></li>
+                    </ul>
+                </div>
+                <div className="footer-col">
+                    <h3>Contact</h3>
+                    <ul>
+                        <li><a href="mailto:hello@garuda.design">hello@garuda.design</a></li>
+                        <li><a href="https://wa.me/" target="_blank" rel="noopener noreferrer">WhatsApp Us</a></li>
                         <li>
-                            <a href="#" className="footer-download-btn">
-                                Company Deck
+                            <Link href="/contact" className="footer-download-btn">
+                                Start a Project
                                 <span className="download-icon">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 5V19M12 19L5 12M12 19L19 12" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
                                 </span>
-                            </a>
+                            </Link>
                         </li>
-                    </ul>
-                </div>
-                <div className="footer-col">
-                    <h3>Compare</h3>
-                    <ul>
-                        <li><a href="#">Vs Agencies</a></li>
-                        <li><a href="#">Vs Freelancers</a></li>
-                        <li><a href="#">Vs Inhouse</a></li>
                     </ul>
                 </div>
             </div>
@@ -56,10 +56,10 @@ const Footer = ({ footerImg }) => {
             <div className="footer-bottom">
                 <div className="footer-bottom-container">
                     <div className="footer-bottom-left">
-                        <a href="#">Terms & Conditions</a>
+                        <a href="#">Terms &amp; Conditions</a>
                     </div>
                     <div className="footer-bottom-center">
-                        <p>© 2026, Garuda, All Rights Reserved. Power by <a href="https://pnscode.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Raju</a></p>
+                        <p>© 2026, Garuda. All Rights Reserved. Powered by <a href="https://pnscode.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Raju</a></p>
                     </div>
                     <div className="footer-bottom-right">
                         <a href="#">Privacy Policy</a>

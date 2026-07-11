@@ -3565,13 +3565,74 @@
 
 .main-footer {
     background-color: #090909;
-    padding: 100px 0 0px;
-    /* Removed bottom padding */
+    padding: 80px 0 0px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     position: relative;
     z-index: 10;
 }
 
+/* Footer Top Brand Section */
+.footer-top {
+    max-width: 1252px;
+    margin: 0 auto;
+    padding: 0 40px 60px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    margin-bottom: 60px;
+}
+
+.footer-brand {
+    max-width: 420px;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.footer-logo-text {
+    font-family: 'Red Hat Display', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.footer-tagline {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 28px;
+}
+
+.footer-social-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.footer-social-link {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.footer-social-link:hover {
+    border-color: rgba(125, 64, 255, 0.5);
+    background: rgba(125, 64, 255, 0.12);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
 
 .footer-container {
     max-width: 1252px;
@@ -3584,14 +3645,15 @@
 
 .footer-col h3 {
     color: rgb(250, 250, 250);
-    font-size: 18px;
-    line-height: 27px;
+    font-size: 16px;
+    line-height: 24px;
     font-weight: 700;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     font-family: 'Outfit', sans-serif;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
 }
-
 
 .footer-col ul {
     list-style: none;
@@ -3600,19 +3662,18 @@
 }
 
 .footer-col ul li {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .footer-col ul li a {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.55);
     text-decoration: none;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 24px;
     font-weight: 400;
     font-family: 'Outfit', sans-serif;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
 }
-
 
 .footer-col ul li a:hover {
     color: #FFFFFF;
@@ -3625,14 +3686,21 @@
     gap: 10px;
     color: #FFFFFF !important;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px !important;
+    background: linear-gradient(135deg, #7D40FF, #6433CC);
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.footer-download-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    padding-left: 16px !important;
 }
 
 .download-icon {
-    background: #7D40FF;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3640,13 +3708,16 @@
 }
 
 .footer-download-btn:hover .download-icon {
-    transform: translateY(3px);
+    transform: translateX(3px);
 }
 
 @media (max-width: 1024px) {
+    .footer-top {
+        padding: 0 24px 48px;
+    }
     .footer-container {
         grid-template-columns: repeat(2, 1fr);
-        gap: 60px;
+        gap: 48px;
     }
 }
 
@@ -3654,25 +3725,33 @@
     .main-footer {
         padding: 60px 0 0px;
     }
+    .footer-top {
+        padding: 0 24px 40px;
+        margin-bottom: 40px;
+    }
     .footer-container {
         padding: 0 24px;
-        gap: 40px;
+        gap: 36px;
     }
 }
 
 @media (max-width: 600px) {
     .footer-container {
-        grid-template-columns: 1fr;
-        gap: 32px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px 20px;
         text-align: left;
     }
 
     .footer-col h3 {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
     }
 
     .footer-download-btn {
         justify-content: flex-start;
+    }
+
+    .footer-brand {
+        max-width: 100%;
     }
 }
 
@@ -6203,11 +6282,10 @@ img {
 .mega-menu-nav-item:hover {
     background: #EBF2FF;
     border-bottom-color: #6433CC;
-    transform: translateX(6px);
 }
 
 .mega-menu-nav-item:active {
-    transform: scale(0.97) translateX(6px);
+    transform: scale(0.97);
 }
 
 .mega-menu-item-left {
