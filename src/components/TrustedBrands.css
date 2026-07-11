@@ -1,0 +1,177 @@
+.trusted-brands-section {
+    background-color: #FFFFFF; /* Pure white background to match Projects section */
+    color: #1E293B;
+    padding: 100px 0 0; /* Bottom padding set to 0 to eliminate space */
+    border-radius: 48px 48px 0 0;
+    position: relative;
+    z-index: 30;
+    margin-top: -30px; /* Overlaps slightly with the dark section above */
+    text-align: center;
+    box-shadow: none; /* Removed shadow to prevent border line */
+    overflow: hidden;
+}
+
+.trusted-brands-container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.trusted-brands-title {
+    font-family: 'Red Hat Display', 'Redhatdisplay Variablefont Wght', Arial, sans-serif;
+    font-size: 24px; /* Exact size requested */
+    font-weight: 700; /* Exact weight requested */
+    line-height: 29px; /* Exact line height requested */
+    color: rgb(10, 10, 10); /* Exact color requested */
+    margin-bottom: 70px;
+    letter-spacing: -0.5px;
+    padding: 0 24px;
+}
+
+.brands-marquee-wrapper {
+    position: relative;
+    width: calc(100% - 48px);
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 24px;
+}
+
+/* Left & Right Fade Mask (Misty Cloud Effect) using white gradient */
+.marquee-fade-left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200px;
+    height: 100%;
+    background: linear-gradient(to right, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.marquee-fade-right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 100%;
+    background: linear-gradient(to left, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.brands-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Reduced gap from 36px */
+    width: 100%;
+}
+
+.brands-marquee-row {
+    display: flex;
+    overflow: hidden;
+    width: 100%;
+    user-select: none;
+}
+
+.brands-marquee-track {
+    display: flex;
+    align-items: center;
+    gap: 40px; /* Reduced gap from 70px to fit 8-9 logos per screen */
+    width: max-content;
+    padding: 5px 0; /* Reduced padding from 10px */
+}
+
+/* Row-specific animation direction & durations (significantly slowed down from 35s to 75s) */
+.row-left .brands-marquee-track {
+    animation: scroll-left 75s linear infinite;
+}
+
+.row-right .brands-marquee-track {
+    animation: scroll-right 75s linear infinite;
+}
+
+.brand-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px; /* Reduced padding from 20px to fit 8-9 logos per screen */
+    height: 64px; /* Reduced height from 80px to eliminate vertical empty space */
+    flex-shrink: 0; /* Prevent flexbox collapse */
+    cursor: default;
+}
+
+.brand-logo-img {
+    height: 64px; /* Exact height requested in the screenshot */
+    width: auto;
+    min-width: 50px; /* Safeguard minimum width */
+    display: block;
+    opacity: 0.55; /* Reduced opacity for a softer, integrated feel */
+    flex-shrink: 0; /* Prevent flexbox collapse */
+    pointer-events: none; /* Prevent mouse grabbing/clicking */
+    user-select: none; /* Prevent selection highlight */
+    -webkit-user-drag: none; /* Prevent browser drag ghosting */
+}
+
+/* Animations */
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+@keyframes scroll-right {
+    0% {
+        transform: translateX(-50%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* Tablet styles */
+@media (max-width: 1024px) {
+    .trusted-brands-section {
+        padding: 80px 0;
+        border-radius: 36px 36px 0 0;
+    }
+    
+    .brands-marquee-track {
+        gap: 50px;
+    }
+    
+    .marquee-fade-left, .marquee-fade-right {
+        width: 22%;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .trusted-brands-section {
+        padding: 60px 0;
+        border-radius: 24px 24px 0 0;
+        margin-top: -20px;
+    }
+    
+    .trusted-brands-title {
+        margin-bottom: 40px;
+    }
+
+    .brands-grid {
+        gap: 24px;
+    }
+
+    .brands-marquee-track {
+        gap: 40px;
+    }
+
+    .brand-name {
+        font-size: 20px;
+    }
+    
+    .marquee-fade-left, .marquee-fade-right {
+        width: 25%;
+    }
+}

@@ -1,0 +1,267 @@
+.work-grid-section {
+    background-color: #0A0A0A;
+    padding: 0 0 80px;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    position: relative;
+    z-index: 20;
+    overflow: hidden;
+}
+
+.work-grid-container {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Marquee Row Content */
+.work-marquee-row {
+    display: flex;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+    position: relative;
+}
+
+/* Fade overlays on the sides of the marquee */
+.work-marquee-row::before,
+.work-marquee-row::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 150px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.work-marquee-row::before {
+    left: 0;
+    background: linear-gradient(to right, #0A0A0A 0%, transparent 100%);
+}
+
+.work-marquee-row::after {
+    right: 0;
+    background: linear-gradient(to left, #0A0A0A 0%, transparent 100%);
+}
+
+.work-marquee-track {
+    display: flex;
+    gap: 24px;
+    padding: 0;
+    align-items: center;
+}
+
+.work-marquee-track .work-card:nth-child(3n+1) {
+    flex: 0 0 580px;
+    width: 580px;
+}
+
+.work-marquee-track .work-card:nth-child(3n+2) {
+    flex: 0 0 320px;
+    width: 320px;
+}
+
+.work-marquee-track .work-card:nth-child(3n+0) {
+    flex: 0 0 320px;
+    width: 320px;
+}
+
+/* Animations */
+.work-marquee-track.left {
+    animation: work-scroll-left 150s linear infinite;
+}
+
+.work-marquee-track.right {
+    animation: work-scroll-right 150s linear infinite;
+}
+
+@keyframes work-scroll-left {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-33.3333%);
+    }
+}
+
+@keyframes work-scroll-right {
+    0% {
+        transform: translateX(-33.3333%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* Card Styling in Marquee */
+.work-card {
+    flex: 0 0 440px;
+    width: 440px;
+    height: 290px;
+    border-radius: 24px;
+    overflow: hidden;
+    display: inline-flex;
+    flex-direction: column;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    text-align: left;
+    white-space: normal; /* Allow text wrapping inside the card */
+}
+
+.work-card:hover {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
+.work-card-info {
+    display: none;
+}
+
+.work-card-logo {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff !important;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.work-card-logo-dot {
+    display: none;
+}
+
+.work-card-logo.dark {
+    color: #ffffff;
+}
+
+.work-card-logo.dark .work-card-logo-dot {
+    display: none;
+}
+
+.work-card-title {
+    display: none;
+}
+
+.work-card-title.dark {
+    display: none;
+}
+
+.work-card-visual {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+    display: flex;
+}
+
+.work-card-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 0;
+}
+
+
+/* Full Image Card (Gummiz / Zinggo style) */
+.work-card.full-img .work-card-visual {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+}
+
+.work-card.full-img .work-card-img {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+.work-card.full-img .work-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70%;
+    background: linear-gradient(to top, rgba(10, 10, 10, 0.95) 0%, rgba(10, 10, 10, 0.3) 60%, transparent 100%);
+    z-index: 1;
+}
+
+.work-card.full-img .work-card-info {
+    margin-top: auto;
+    z-index: 2;
+    padding-bottom: 28px;
+}
+
+.work-card.full-img .work-card-title {
+    color: #ffffff !important;
+}
+
+.work-card.full-img .work-card-logo {
+    color: #ffffff !important;
+}
+
+/* Custom styles for Gridline wood card */
+.work-card.wood-card .work-card-img {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .work-card {
+        height: 220px;
+    }
+
+    .work-marquee-track .work-card:nth-child(3n+1) {
+        flex: 0 0 400px;
+        width: 400px;
+    }
+
+    .work-marquee-track .work-card:nth-child(3n+2) {
+        flex: 0 0 240px;
+        width: 240px;
+    }
+
+    .work-marquee-track .work-card:nth-child(3n+0) {
+        flex: 0 0 240px;
+        width: 240px;
+    }
+    .work-card-info {
+        padding: 20px 20px 8px;
+    }
+    .work-card-title {
+        font-size: 16px;
+    }
+    .work-card-logo {
+        font-size: 11px;
+    }
+    .work-card-img {
+        height: 110px;
+    }
+    .work-card.full-img .work-card-info {
+        padding-bottom: 20px;
+    }
+    .work-grid-section {
+        padding: 40px 0;
+    }
+}

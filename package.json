@@ -1,0 +1,23 @@
+{
+  "name": "designmonks-hero",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.4",
+    "firebase": "^12.10.0",
+    "framer-motion": "^12.34.3",
+    "lucide-react": "^0.575.0",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.13.1",
+    "vite": "^7.3.1"
+  }
+}
