@@ -63,7 +63,7 @@ import wwd3_1 from '../../img/we do/3.1.avif';
 import wwd3_2 from '../../img/we do/3.2.avif';
 import wwd4_1 from '../../img/we do/4.1.avif';
 import wwd4_2 from '../../img/we do/4.2.avif';
-import footerImg from '../../img/foo.webp';
+import footerImg from '../../public/blog-hero-bg.webp';
 
 // AI-Powered Design Section Images
 import aiCenterLogo from '../../img/AI-Powered Design/68b61fd952b78aa1c579683c_Frame 2147224744.svg';

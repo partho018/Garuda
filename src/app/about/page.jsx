@@ -11,12 +11,11 @@ import PreFooter from '../../components/PreFooter';
 
 // Asset Imports
 import cubeImg from '../../assets/cube.avif';
-import footerImg from '../../../img/foo.webp';
+import footerImg from '../../../public/blog-hero-bg.webp';
 import mockupImg from '../../assets/right-side-mockup.avif';
 import coFoundersImg from '../../assets/co_founders_photo.png';
 import careerImg from '../../assets/67a2138f9f2e22f26587c4c0_Product Design Vs UX Design 3 3.avif';
 import fortyPlus from '../../../img/40+.avif';
-import ctaArrow from '../../../img/67326d59201cc3b185432b90_CTA Arrow.svg';
 import uiPhotoImg from '../../assets/6734f70094aa7b62e8c08b04_UI Photo.avif';
 
 // Brand Logo Imports

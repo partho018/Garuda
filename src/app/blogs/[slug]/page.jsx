@@ -13,7 +13,7 @@ import uiPhotoImg from '../../../assets/6734f70094aa7b62e8c08b04_UI Photo.avif';
 
 // Asset Imports
 import detailsBg from '../../../../img/image (1).webp';
-import footerImg from '../../../../img/foo.webp';
+import footerImg from '../../../../public/blog-hero-bg.webp';
 import fortyPlus from '../../../../img/40+.avif';
 
 // Consultation Component and Assets

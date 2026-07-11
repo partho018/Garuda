@@ -11,10 +11,10 @@ import PreFooter from '../../components/PreFooter';
 import BackToTop from '../../components/BackToTop';
 
 // Asset Imports
-import footerImg from '../../../img/foo.webp';
+import footerImg from '../../../public/blog-hero-bg.webp';
 import fortyPlus from '../../../img/40+.avif';
 import uiPhotoImg from '../../assets/6734f70094aa7b62e8c08b04_UI Photo.avif';
-import newsletterBg from '../../../img/image.webp';
+import newsletterBg from '../../../img/image (1).webp';
 
 const containerVariants = {
     hidden: { opacity: 0 },

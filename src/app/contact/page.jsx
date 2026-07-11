@@ -6,7 +6,7 @@ import Loader from '../../components/Loader';
 import BackToTop from '../../components/BackToTop';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import footerImg from '../../../img/foo.webp';
+import footerImg from '../../../public/blog-hero-bg.webp';
 import contactGlobeImg from '../../assets/1 (2).avif';
 import contactCubeImg from '../../assets/1 (1).avif';
 import './contact.css';
