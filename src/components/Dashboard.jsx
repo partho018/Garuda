@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-    collection, addDoc, getDocs, updateDoc, deleteDoc,
-    doc, query, orderBy, onSnapshot, setDoc
-} from 'firebase/firestore';
-import { db } from '../firebase';
 import './Dashboard.css';
 
 function Dashboard() {
@@ -20,21 +15,21 @@ function Dashboard() {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const [currentEmail, setCurrentEmail] = useState('admin@gmail.com');
-    const [userRole, setUserRole] = useState('Super Admin');
-    const [adminEmail, setAdminEmail] = useState('admin@gmail.com');
-    const [currentAuthorName, setCurrentAuthorName] = useState('Admin');
+    const [currentEmail, setCurrentEmail] = useState('');
+    const [userRole, setUserRole] = useState('Editor');
+    const [adminEmail, setAdminEmail] = useState('');
+    const [currentAuthorName, setCurrentAuthorName] = useState('Author');
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            setCurrentEmail(sessionStorage.getItem('dashboard_user_email') || localStorage.getItem('dashboard_email') || 'admin@gmail.com');
-            setUserRole(sessionStorage.getItem('dashboard_role') || 'Super Admin');
-            setAdminEmail(localStorage.getItem('dashboard_email') || 'admin@gmail.com');
-            setCurrentAuthorName(localStorage.getItem('dashboard_author_name') || 'Admin');
+            setCurrentEmail(sessionStorage.getItem('dashboard_user_email') || '');
+            setUserRole(sessionStorage.getItem('dashboard_role') || 'Editor');
+            setAdminEmail(sessionStorage.getItem('dashboard_user_email') || '');
+            setCurrentAuthorName(sessionStorage.getItem('dashboard_author_name') || localStorage.getItem('dashboard_author_name') || 'Author');
         }
     }, []);
 
-    // ========== BLOG STATES ==========
+    // ========== STATE VARIABLES ==========
     const [posts, setPosts] = useState([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -51,7 +46,7 @@ function Dashboard() {
     const [blogFilter, setBlogFilter] = useState('all');
     const fileInputRef = useRef(null);
 
-    // Dynamic Categories & Sort States
+    // Categories
     const [categories, setCategories] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(true);
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -62,15 +57,16 @@ function Dashboard() {
     const [selectedPostIds, setSelectedPostIds] = useState([]);
     const [previewPost, setPreviewPost] = useState(null);
 
-    // ========== SUBMISSION STATES ==========
+    // Submissions
     const [submissions, setSubmissions] = useState([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(true);
     const [submissionSearch, setSubmissionSearch] = useState('');
+    const [submissionStatusFilter, setSubmissionStatusFilter] = useState('all');
+    const [activeSubmissionDetail, setActiveSubmissionDetail] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // ========== NEW TABS STATES ==========
-    // Jobs states
+    // Jobs
     const [jobs, setJobs] = useState([]);
     const [loadingJobs, setLoadingJobs] = useState(true);
     const [showJobModal, setShowJobModal] = useState(false);
@@ -78,7 +74,7 @@ function Dashboard() {
     const [jobForm, setJobForm] = useState({ title: '', desc: '', salary: '', vacancy: '1', type: 'Full Time', location: 'Remote' });
     const [jobSearch, setSearchJob] = useState('');
 
-    // Media states
+    // Media
     const [mediaItems, setMediaItems] = useState([]);
     const [loadingMedia, setLoadingMedia] = useState(true);
     const [showMediaModal, setShowMediaModal] = useState(false);
@@ -86,7 +82,7 @@ function Dashboard() {
     const [uploadingMedia, setUploadingMedia] = useState(false);
     const mediaFileInputRef = useRef(null);
 
-    // Site Settings states
+    // Site Settings
     const [siteSettings, setSiteSettings] = useState({
         contactEmail: 'hello@garuda.com',
         facebookUrl: '',
@@ -99,14 +95,12 @@ function Dashboard() {
     const [loadingSettings, setLoadingSettings] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);
 
-    // Users states
+    // Users
     const [users, setUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [showUserModal, setShowUserModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [userForm, setUserForm] = useState({ email: '', password: '', role: 'Editor' });
-
-    const CATEGORIES = ['Web Design', 'SEO', 'Development', 'Branding', 'UI/UX', 'Mobile Apps', 'Marketing', 'Other'];
 
     // Auth check
     useEffect(() => {
@@ -114,120 +108,135 @@ function Dashboard() {
         if (!isLoggedIn) router.push('/dashboard/login');
     }, [router]);
 
-    // ========== Firebase: Real-time categories listener ==========
-    useEffect(() => {
-        setLoadingCategories(true);
-        const q = query(collection(db, 'blog_categories'), orderBy('name', 'asc'));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            if (fetched.length === 0) {
-                const defaults = ['Web Design', 'SEO', 'Development', 'Branding', 'UI/UX', 'Mobile Apps', 'Marketing', 'Other'];
-                defaults.forEach(async (catName) => {
-                    await addDoc(collection(db, 'blog_categories'), { name: catName });
+    // ========== REST API DATA FETCHERS ==========
+    const fetchCategories = async () => {
+        try {
+            setLoadingCategories(true);
+            const res = await fetch('/api/dashboard/categories');
+            const json = await res.json();
+            if (json.success) {
+                setCategories(json.data || []);
+            }
+        } catch (err) {
+            console.error('API error (categories):', err);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    const fetchPosts = async () => {
+        try {
+            setLoadingPosts(true);
+            const res = await fetch('/api/dashboard/posts');
+            const json = await res.json();
+            if (json.success) {
+                setPosts(json.data || []);
+            }
+        } catch (err) {
+            console.error('API error (posts):', err);
+        } finally {
+            setLoadingPosts(false);
+        }
+    };
+
+    const fetchSubmissions = async () => {
+        try {
+            setLoadingSubmissions(true);
+            const res = await fetch('/api/dashboard/submissions');
+            const json = await res.json();
+            if (json.success) {
+                setSubmissions(json.data || []);
+            }
+        } catch (err) {
+            console.error('API error (submissions):', err);
+        } finally {
+            setLoadingSubmissions(false);
+        }
+    };
+
+    const fetchJobs = async () => {
+        try {
+            setLoadingJobs(true);
+            const res = await fetch('/api/dashboard/jobs');
+            const json = await res.json();
+            if (json.success) {
+                setJobs(json.data || []);
+            }
+        } catch (err) {
+            console.error('API error (jobs):', err);
+        } finally {
+            setLoadingJobs(false);
+        }
+    };
+
+    const fetchMedia = async () => {
+        try {
+            setLoadingMedia(true);
+            const res = await fetch('/api/dashboard/media');
+            const json = await res.json();
+            if (json.success) {
+                setMediaItems(json.data || []);
+            }
+        } catch (err) {
+            console.error('API error (media):', err);
+        } finally {
+            setLoadingMedia(false);
+        }
+    };
+
+    const fetchSettings = async () => {
+        try {
+            setLoadingSettings(true);
+            const res = await fetch('/api/dashboard/settings');
+            const json = await res.json();
+            if (json.success) {
+                setSiteSettings(json.data || {
+                    contactEmail: 'hello@garuda.com',
+                    facebookUrl: '',
+                    twitterUrl: '',
+                    instagramUrl: '',
+                    linkedinUrl: '',
+                    seoTitle: 'Garuda - Design Agency',
+                    seoDescription: 'High-end design agency focusing on conversions.'
                 });
-            } else {
-                setCategories(fetched);
             }
-            setLoadingCategories(false);
-        }, (err) => {
-            console.error('Firebase error (categories):', err);
-            setLoadingCategories(false);
-        });
-        return () => unsub();
-    }, []);
+        } catch (err) {
+            console.error('API error (settings):', err);
+        } finally {
+            setLoadingSettings(false);
+        }
+    };
 
-    // ========== Firebase: Real-time posts listener ==========
-    useEffect(() => {
-        setLoadingPosts(true);
-        const q = query(collection(db, 'blog_posts'), orderBy('createdAt', 'desc'));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setPosts(fetched);
-            setLoadingPosts(false);
-        }, (err) => {
-            console.error('Firebase error:', err);
-            setLoadingPosts(false);
-        });
-        return () => unsub();
-    }, []);
-
-    // ========== Firebase: Real-time submissions listener ==========
-    useEffect(() => {
-        setLoadingSubmissions(true);
-        const q = query(collection(db, 'contact_submissions'), orderBy('createdAt', 'desc'));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setSubmissions(fetched);
-            setLoadingSubmissions(false);
-        }, (err) => {
-            console.error('Firebase error (submissions):', err);
-            setLoadingSubmissions(false);
-        });
-        return () => unsub();
-    }, []);
-
-    // ========== Firebase: Real-time jobs listener ==========
-    useEffect(() => {
-        setLoadingJobs(true);
-        const q = query(collection(db, 'job_openings'), orderBy('createdAt', 'desc'));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setJobs(fetched);
-            setLoadingJobs(false);
-        }, (err) => {
-            console.error('Firebase error (jobs):', err);
-            setLoadingJobs(false);
-        });
-        return () => unsub();
-    }, []);
-
-    // ========== Firebase: Real-time media listener ==========
-    useEffect(() => {
-        setLoadingMedia(true);
-        const q = query(collection(db, 'media_library'), orderBy('createdAt', 'desc'));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setMediaItems(fetched);
-            setLoadingMedia(false);
-        }, (err) => {
-            console.error('Firebase error (media):', err);
-            setLoadingMedia(false);
-        });
-        return () => unsub();
-    }, []);
-
-    // ========== Firebase: Site Settings Fetch ==========
-    useEffect(() => {
-        setLoadingSettings(true);
-        const unsub = onSnapshot(doc(db, 'site_settings', 'general'), (docSnap) => {
-            if (docSnap.exists()) {
-                setSiteSettings(docSnap.data());
+    const fetchUsers = async () => {
+        try {
+            setLoadingUsers(true);
+            const res = await fetch('/api/dashboard/users');
+            const json = await res.json();
+            if (json.success) {
+                setUsers(json.data || []);
             }
-            setLoadingSettings(false);
-        }, (err) => {
-            console.error('Firebase error (settings):', err);
-            setLoadingSettings(false);
-        });
-        return () => unsub();
-    }, []);
+        } catch (err) {
+            console.error('API error (users):', err);
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
 
-    // ========== Firebase: Real-time users listener ==========
+    // Fetch all on mount
     useEffect(() => {
-        setLoadingUsers(true);
-        const q = query(collection(db, 'dashboard_users'), orderBy('createdAt', 'desc'));
-        const unsub = onSnapshot(q, (snapshot) => {
-            const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            setUsers(fetched);
-            setLoadingUsers(false);
-        }, (err) => {
-            console.error('Firebase error (users):', err);
-            setLoadingUsers(false);
-        });
-        return () => unsub();
+        fetchCategories();
+        fetchPosts();
+        fetchSubmissions();
+        fetchJobs();
+        fetchMedia();
+        fetchSettings();
+        fetchUsers();
     }, []);
 
     const handleLogout = () => {
         sessionStorage.removeItem('dashboard_auth');
+        sessionStorage.removeItem('dashboard_role');
+        sessionStorage.removeItem('dashboard_user_email');
         router.push('/dashboard/login');
     };
 
@@ -240,38 +249,113 @@ function Dashboard() {
 
     const closeModal = () => { setShowChangeModal(false); setChangeType(''); setMessage({ type: '', text: '' }); };
 
-    const handleUpdate = (e) => {
-        e.preventDefault(); setIsUpdating(true); setMessage({ type: '', text: '' });
-        const storedPassword = localStorage.getItem('dashboard_password') || 'admin123';
-        setTimeout(() => {
-            if (currentPassword !== storedPassword) {
+    const handleUpdate = async (e) => {
+        e.preventDefault(); 
+        setIsUpdating(true); 
+        setMessage({ type: '', text: '' });
+        
+        try {
+            // Verify current password via D1 database login API
+            const checkRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: currentEmail, password: currentPassword })
+            });
+            const checkData = await checkRes.json();
+            if (!checkRes.ok || !checkData.success) {
                 setMessage({ type: 'error', text: 'Current password is incorrect!' });
-                setIsUpdating(false); return;
+                setIsUpdating(false);
+                return;
             }
+
             if (changeType === 'password') {
-                if (newValue.length < 6) { setMessage({ type: 'error', text: 'New password must be at least 6 characters!' }); setIsUpdating(false); return; }
-                if (newValue !== confirmPassword) { setMessage({ type: 'error', text: 'Passwords do not match!' }); setIsUpdating(false); return; }
-                localStorage.setItem('dashboard_password', newValue);
+                if (newValue.length < 6) { 
+                    setMessage({ type: 'error', text: 'New password must be at least 6 characters!' }); 
+                    setIsUpdating(false); 
+                    return; 
+                }
+                if (newValue !== confirmPassword) { 
+                    setMessage({ type: 'error', text: 'Passwords do not match!' }); 
+                    setIsUpdating(false); 
+                    return; 
+                }
+
+                // If user exists in DB, update their database record as well
+                const dbUser = users.find(u => u.email === currentEmail);
+                if (dbUser) {
+                    await fetch('/api/dashboard/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: dbUser.id,
+                            email: currentEmail,
+                            password: newValue,
+                            role: dbUser.role
+                        })
+                    });
+                }
+                
                 setMessage({ type: 'success', text: 'Password updated successfully!' });
             } else if (changeType === 'email') {
-                if (!newValue.includes('@') || !newValue.includes('.')) { setMessage({ type: 'error', text: 'Please enter a valid Gmail address!' }); setIsUpdating(false); return; }
-                localStorage.setItem('dashboard_email', newValue);
+                if (!newValue.includes('@') || !newValue.includes('.')) { 
+                    setMessage({ type: 'error', text: 'Please enter a valid Gmail address!' }); 
+                    setIsUpdating(false); 
+                    return; 
+                }
+
+                const dbUser = users.find(u => u.email === currentEmail);
+                if (dbUser) {
+                    await fetch('/api/dashboard/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: dbUser.id,
+                            email: newValue,
+                            role: dbUser.role
+                        })
+                    });
+                }
+
+                sessionStorage.setItem('dashboard_user_email', newValue);
                 setCurrentEmail(newValue);
                 setAdminEmail(newValue);
                 setMessage({ type: 'success', text: 'Gmail updated successfully!' });
+                fetchUsers();
             } else if (changeType === 'authorName') {
-                if (newValue.trim().length === 0) { setMessage({ type: 'error', text: 'Author name cannot be empty!' }); setIsUpdating(false); return; }
+                if (newValue.trim().length === 0) { 
+                    setMessage({ type: 'error', text: 'Author name cannot be empty!' }); 
+                    setIsUpdating(false); 
+                    return; 
+                }
+                sessionStorage.setItem('dashboard_author_name', newValue);
                 localStorage.setItem('dashboard_author_name', newValue);
                 setCurrentAuthorName(newValue);
                 setMessage({ type: 'success', text: 'Author name updated successfully!' });
             }
-            setIsUpdating(false);
+            
             setTimeout(() => closeModal(), 1500);
-        }, 800);
+        } catch (err) {
+            console.error('Update credentials error:', err);
+            setMessage({ type: 'error', text: 'Failed to update changes in database.' });
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     // ========== BLOG HELPERS ==========
     const generateSlug = (title) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    const getDefaultAuthor = () => {
+        if (currentEmail) {
+            const prefix = currentEmail.split('@')[0];
+            return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        }
+        if (users && users.length > 0) {
+            const prefix = users[0].email.split('@')[0];
+            return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        }
+        return 'Admin';
+    };
 
     const openBlogModal = (post = null) => {
         if (post) {
@@ -283,7 +367,7 @@ function Dashboard() {
                 categories: post.categories || (post.category ? [post.category] : []),
                 shortDesc: post.shortDesc || '',
                 content: post.content || '',
-                author: post.author || currentAuthorName,
+                author: post.author || getDefaultAuthor(),
                 date: post.date || new Date().toISOString().split('T')[0],
                 tags: post.tags || '',
                 status: post.status || 'draft',
@@ -303,7 +387,7 @@ function Dashboard() {
                 categories: [],
                 shortDesc: '',
                 content: '',
-                author: currentAuthorName,
+                author: getDefaultAuthor(),
                 date: new Date().toISOString().split('T')[0],
                 tags: '',
                 status: 'draft',
@@ -340,35 +424,42 @@ function Dashboard() {
         reader.readAsDataURL(file);
     };
 
-    // ── Firebase CRUD ──
+    // ── REST API D1 CRUD for Blogs ──
     const handleBlogSubmit = async (e) => {
         e.preventDefault();
         if (!blogForm.title || !blogForm.content) return;
         setSaving(true);
         try {
-            const { id: _id, ...formData } = blogForm;
-            const legacyCategory = (formData.categories && formData.categories[0]) || '';
-            const finalData = {
-                ...formData,
+            const legacyCategory = (blogForm.categories && blogForm.categories[0]) || 'Other';
+            
+            const payload = {
+                ...blogForm,
                 category: legacyCategory,
-                categories: formData.categories || [],
-                status: formData.status || 'draft',
-                date: formData.date || new Date().toISOString().split('T')[0],
-                viewCount: formData.viewCount || 0,
-                seoTitle: formData.title || '',
-                seoDesc: formData.shortDesc || '',
-                updatedAt: new Date().toISOString()
+                categories: blogForm.categories || [legacyCategory],
+                status: blogForm.status || 'draft',
+                date: blogForm.date || new Date().toISOString().split('T')[0],
+                viewCount: blogForm.viewCount || 0,
+                seoTitle: blogForm.title || '',
+                seoDesc: blogForm.shortDesc || ''
             };
 
             if (editingPost) {
-                await updateDoc(doc(db, 'blog_posts', editingPost.id), finalData);
-            } else {
-                await addDoc(collection(db, 'blog_posts'), {
-                    ...finalData,
-                    createdAt: new Date().toISOString()
-                });
+                payload.id = editingPost.id;
             }
-            closeBlogModal();
+
+            const res = await fetch('/api/dashboard/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeBlogModal();
+                fetchPosts();
+            } else {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to save blog post');
+            }
         } catch (err) {
             console.error('Save error:', err);
             alert('Error saving post: ' + err.message);
@@ -381,8 +472,15 @@ function Dashboard() {
         e.preventDefault();
         if (!newCategoryName.trim()) return;
         try {
-            await addDoc(collection(db, 'blog_categories'), { name: newCategoryName.trim() });
-            setNewCategoryName('');
+            const res = await fetch('/api/dashboard/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newCategoryName.trim() })
+            });
+            if (res.ok) {
+                setNewCategoryName('');
+                fetchCategories();
+            }
         } catch (err) {
             console.error('Create category error:', err);
         }
@@ -392,9 +490,19 @@ function Dashboard() {
         e.preventDefault();
         if (!editingCategory || !editingCategoryName.trim()) return;
         try {
-            await updateDoc(doc(db, 'blog_categories', editingCategory.id), { name: editingCategoryName.trim() });
-            setEditingCategory(null);
-            setEditingCategoryName('');
+            const res = await fetch('/api/dashboard/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: editingCategory.id,
+                    name: editingCategoryName.trim()
+                })
+            });
+            if (res.ok) {
+                setEditingCategory(null);
+                setEditingCategoryName('');
+                fetchCategories();
+            }
         } catch (err) {
             console.error('Update category error:', err);
         }
@@ -403,7 +511,12 @@ function Dashboard() {
     const handleDeleteCategory = async (id, name) => {
         if (!window.confirm(`Are you sure you want to delete category "${name}"?`)) return;
         try {
-            await deleteDoc(doc(db, 'blog_categories', id));
+            const res = await fetch(`/api/dashboard/categories?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                fetchCategories();
+            }
         } catch (err) {
             console.error('Delete category error:', err);
         }
@@ -412,15 +525,31 @@ function Dashboard() {
     // ========== DUPLICATE & PREVIEW ==========
     const handleDuplicatePost = async (post) => {
         try {
-            const { id, ...copyData } = post;
-            await addDoc(collection(db, 'blog_posts'), {
-                ...copyData,
-                title: `Copy of ${copyData.title}`,
+            const payload = {
+                title: `Copy of ${post.title}`,
+                slug: `${post.slug}-copy-${Math.floor(Math.random() * 1000)}`,
+                category: post.category,
+                categories: post.categories,
+                shortDesc: post.shortDesc,
+                content: post.content,
+                author: post.author,
+                date: new Date().toISOString().split('T')[0],
+                tags: post.tags,
                 status: 'draft',
-                viewCount: 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                thumbnail: post.thumbnail,
+                seoTitle: `Copy of ${post.title}`,
+                seoDesc: post.shortDesc,
+                viewCount: 0
+            };
+
+            const res = await fetch('/api/dashboard/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
+            if (res.ok) {
+                fetchPosts();
+            }
         } catch (err) {
             console.error('Duplicate post error:', err);
         }
@@ -431,8 +560,13 @@ function Dashboard() {
         if (selectedPostIds.length === 0) return;
         if (!window.confirm(`Are you sure you want to delete ${selectedPostIds.length} selected post(s)?`)) return;
         try {
-            await Promise.all(selectedPostIds.map(id => deleteDoc(doc(db, 'blog_posts', id))));
-            setSelectedPostIds([]);
+            const res = await fetch(`/api/dashboard/posts?ids=${selectedPostIds.join(',')}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setSelectedPostIds([]);
+                fetchPosts();
+            }
         } catch (err) {
             console.error('Bulk delete error:', err);
         }
@@ -441,11 +575,15 @@ function Dashboard() {
     const handleBulkStatusUpdate = async (status) => {
         if (selectedPostIds.length === 0) return;
         try {
-            await Promise.all(selectedPostIds.map(id => updateDoc(doc(db, 'blog_posts', id), {
-                status: status,
-                updatedAt: new Date().toISOString()
-            })));
-            setSelectedPostIds([]);
+            const res = await fetch('/api/dashboard/posts', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedPostIds, status })
+            });
+            if (res.ok) {
+                setSelectedPostIds([]);
+                fetchPosts();
+            }
         } catch (err) {
             console.error('Bulk status update error:', err);
         }
@@ -454,18 +592,15 @@ function Dashboard() {
     const handleBulkMoveCategory = async (catName) => {
         if (selectedPostIds.length === 0 || !catName) return;
         try {
-            await Promise.all(selectedPostIds.map(id => {
-                const post = posts.find(p => p.id === id);
-                if (!post) return Promise.resolve();
-                const currentCats = post.categories || (post.category ? [post.category] : []);
-                const updatedCats = currentCats.includes(catName) ? currentCats : [...currentCats, catName];
-                return updateDoc(doc(db, 'blog_posts', id), {
-                    categories: updatedCats,
-                    category: catName,
-                    updatedAt: new Date().toISOString()
-                });
-            }));
-            setSelectedPostIds([]);
+            const res = await fetch('/api/dashboard/posts', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedPostIds, category: catName })
+            });
+            if (res.ok) {
+                setSelectedPostIds([]);
+                fetchPosts();
+            }
         } catch (err) {
             console.error('Bulk move category error:', err);
         }
@@ -473,7 +608,12 @@ function Dashboard() {
 
     const handleDeletePost = async (id) => {
         try {
-            await deleteDoc(doc(db, 'blog_posts', id));
+            const res = await fetch(`/api/dashboard/posts?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                fetchPosts();
+            }
         } catch (err) {
             console.error('Delete error:', err);
         }
@@ -482,10 +622,17 @@ function Dashboard() {
 
     const toggleStatus = async (post) => {
         try {
-            await updateDoc(doc(db, 'blog_posts', post.id), {
-                status: post.status === 'published' ? 'draft' : 'published',
-                updatedAt: new Date().toISOString()
+            const res = await fetch('/api/dashboard/posts', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ids: [post.id],
+                    status: post.status === 'published' ? 'draft' : 'published'
+                })
             });
+            if (res.ok) {
+                fetchPosts();
+            }
         } catch (err) {
             console.error('Toggle error:', err);
         }
@@ -524,11 +671,19 @@ function Dashboard() {
     const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
 
     // ========== SUBMISSION HELPERS ==========
-    const filteredSubmissions = submissions.filter(s =>
-        s.fullName?.toLowerCase().includes(submissionSearch.toLowerCase()) ||
-        s.email?.toLowerCase().includes(submissionSearch.toLowerCase()) ||
-        s.details?.toLowerCase().includes(submissionSearch.toLowerCase())
-    );
+    const filteredSubmissions = submissions.filter(s => {
+        const matchesSearch = 
+            s.fullName?.toLowerCase().includes(submissionSearch.toLowerCase()) ||
+            s.email?.toLowerCase().includes(submissionSearch.toLowerCase()) ||
+            s.details?.toLowerCase().includes(submissionSearch.toLowerCase()) ||
+            s.whatsapp?.toLowerCase().includes(submissionSearch.toLowerCase()) ||
+            (s.budget || '').toLowerCase().includes(submissionSearch.toLowerCase());
+            
+        const matchesStatus = submissionStatusFilter === 'all' || 
+            (s.status || '').toLowerCase() === submissionStatusFilter.toLowerCase();
+            
+        return matchesSearch && matchesStatus;
+    });
 
     const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage);
     const paginatedSubmissions = filteredSubmissions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -536,7 +691,12 @@ function Dashboard() {
     const handleDeleteSubmission = async (id) => {
         if (!window.confirm('Are you sure you want to delete this submission?')) return;
         try {
-            await deleteDoc(doc(db, 'contact_submissions', id));
+            const res = await fetch(`/api/dashboard/submissions?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                fetchSubmissions();
+            }
         } catch (err) {
             console.error('Delete error:', err);
         }
@@ -544,10 +704,14 @@ function Dashboard() {
 
     const handleUpdateSubmissionStatus = async (id, status) => {
         try {
-            await updateDoc(doc(db, 'contact_submissions', id), {
-                status: status,
-                updatedAt: new Date().toISOString()
+            const res = await fetch('/api/dashboard/submissions', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status })
             });
+            if (res.ok) {
+                fetchSubmissions();
+            }
         } catch (err) {
             console.error('Status update error:', err);
         }
@@ -575,20 +739,23 @@ function Dashboard() {
         if (!jobForm.title || !jobForm.desc) return;
         setSaving(true);
         try {
-            const { id: _id, ...formData } = jobForm;
+            const payload = { ...jobForm };
             if (editingJob) {
-                await updateDoc(doc(db, 'job_openings', editingJob.id), {
-                    ...formData,
-                    updatedAt: new Date().toISOString()
-                });
-            } else {
-                await addDoc(collection(db, 'job_openings'), {
-                    ...formData,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
+                payload.id = editingJob.id;
             }
-            closeJobModal();
+
+            const res = await fetch('/api/dashboard/jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeJobModal();
+                fetchJobs();
+            } else {
+                throw new Error('Failed to save job');
+            }
         } catch (err) {
             console.error('Job save error:', err);
             alert('Error saving job: ' + err.message);
@@ -599,7 +766,12 @@ function Dashboard() {
     const handleDeleteJob = async (id) => {
         if (!window.confirm('Are you sure you want to delete this job opening?')) return;
         try {
-            await deleteDoc(doc(db, 'job_openings', id));
+            const res = await fetch(`/api/dashboard/jobs?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                fetchJobs();
+            }
         } catch (err) {
             console.error('Job delete error:', err);
         }
@@ -613,12 +785,21 @@ function Dashboard() {
         const reader = new FileReader();
         reader.onloadend = async () => {
             try {
-                await addDoc(collection(db, 'media_library'), {
-                    name: file.name,
-                    url: reader.result,
-                    createdAt: new Date().toISOString()
+                const res = await fetch('/api/dashboard/media', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: file.name,
+                        url: reader.result
+                    })
                 });
-                alert('Media uploaded successfully!');
+
+                if (res.ok) {
+                    alert('Media uploaded successfully!');
+                    fetchMedia();
+                } else {
+                    throw new Error('Failed to save media in database');
+                }
             } catch (err) {
                 console.error('Media upload error:', err);
                 alert('Failed to upload media: ' + err.message);
@@ -631,7 +812,12 @@ function Dashboard() {
     const handleDeleteMedia = async (id) => {
         if (!window.confirm('Are you sure you want to delete this media item?')) return;
         try {
-            await deleteDoc(doc(db, 'media_library', id));
+            const res = await fetch(`/api/dashboard/media?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                fetchMedia();
+            }
         } catch (err) {
             console.error('Media delete error:', err);
         }
@@ -642,8 +828,18 @@ function Dashboard() {
         e.preventDefault();
         setSavingSettings(true);
         try {
-            await setDoc(doc(db, 'site_settings', 'general'), siteSettings);
-            alert('Website general settings updated successfully!');
+            const res = await fetch('/api/dashboard/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(siteSettings)
+            });
+
+            if (res.ok) {
+                alert('Website general settings updated successfully!');
+                fetchSettings();
+            } else {
+                throw new Error('Failed to update settings');
+            }
         } catch (err) {
             console.error('Settings save error:', err);
             alert('Error updating settings: ' + err.message);
@@ -670,23 +866,27 @@ function Dashboard() {
 
     const handleUserSubmit = async (e) => {
         e.preventDefault();
-        if (!userForm.email || !userForm.password) return;
+        if (!userForm.email || (!editingUser && !userForm.password)) return;
         setSaving(true);
         try {
-            const { id: _id, ...formData } = userForm;
+            const payload = { ...userForm };
             if (editingUser) {
-                await updateDoc(doc(db, 'dashboard_users', editingUser.id), {
-                    ...formData,
-                    updatedAt: new Date().toISOString()
-                });
-            } else {
-                await addDoc(collection(db, 'dashboard_users'), {
-                    ...formData,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
+                payload.id = editingUser.id;
             }
-            closeUserModal();
+
+            const res = await fetch('/api/dashboard/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeUserModal();
+                fetchUsers();
+            } else {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to save user');
+            }
         } catch (err) {
             console.error('User save error:', err);
             alert('Error saving user: ' + err.message);
@@ -697,7 +897,12 @@ function Dashboard() {
     const handleDeleteUser = async (id) => {
         if (!window.confirm('Are you sure you want to delete this user?')) return;
         try {
-            await deleteDoc(doc(db, 'dashboard_users', id));
+            const res = await fetch(`/api/dashboard/users?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                fetchUsers();
+            }
         } catch (err) {
             console.error('User delete error:', err);
         }
@@ -746,7 +951,7 @@ function Dashboard() {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
-                        Inquiries
+                        Contact Form
                         {submissions.length > 0 && <span className="db-nav-badge blue">{submissions.length}</span>}
                     </button>
                     <button id="nav-career" className={`db-nav-item ${activeTab === 'career' ? 'active' : ''}`} onClick={() => setActiveTab('career')}>
@@ -806,7 +1011,7 @@ function Dashboard() {
                 {/* Header */}
                 <div className="db-header">
                     <div className="db-header-title">
-                        <h1>{activeTab === 'overview' ? 'Dashboard Overview' : activeTab === 'blog' ? 'Blog Management' : activeTab === 'submissions' ? 'Contact Submissions' : activeTab === 'career' ? 'Careers Management' : activeTab === 'media' ? 'Media Library' : activeTab === 'users' ? 'User Roles Management' : 'Account Settings'}</h1>
+                        <h1>{activeTab === 'overview' ? 'Dashboard Overview' : activeTab === 'blog' ? 'Blog Management' : activeTab === 'submissions' ? 'Contact Form' : activeTab === 'career' ? 'Careers Management' : activeTab === 'media' ? 'Media Library' : activeTab === 'users' ? 'User Roles Management' : 'Account Settings'}</h1>
                         <p>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                     <div className="db-header-actions">
@@ -1012,14 +1217,25 @@ function Dashboard() {
                                                 <div className="db-form-group">
                                                     <label>Author</label>
                                                     <select name="author" value={blogForm.author} onChange={handleBlogFormChange}>
-                                                        {currentAuthorName && <option value={currentAuthorName}>{currentAuthorName}</option>}
-                                                        {adminEmail && adminEmail.split('@')[0] !== currentAuthorName && (
-                                                            <option value={adminEmail.split('@')[0]}>{adminEmail.split('@')[0]}</option>
+                                                        {currentAuthorName && (
+                                                            <option value={currentAuthorName}>{currentAuthorName} (Default)</option>
+                                                        )}
+                                                        {blogForm.author && currentAuthorName && blogForm.author.toLowerCase() !== currentAuthorName.toLowerCase() && !users.some(u => {
+                                                            const name = u.email.split('@')[0];
+                                                            const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+                                                            return displayName.toLowerCase() === blogForm.author.toLowerCase() || u.email.toLowerCase() === blogForm.author.toLowerCase();
+                                                        }) && (
+                                                            <option value={blogForm.author}>{blogForm.author}</option>
                                                         )}
                                                         {users.map(u => {
                                                             const name = u.email.split('@')[0];
-                                                            if (name === currentAuthorName || name === adminEmail.split('@')[0]) return null;
-                                                            return <option key={u.id} value={name}>{name}</option>;
+                                                            const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+                                                            if (currentAuthorName && displayName.toLowerCase() === currentAuthorName.toLowerCase()) return null;
+                                                            return (
+                                                                <option key={u.id} value={displayName}>
+                                                                    {displayName}
+                                                                </option>
+                                                            );
                                                         })}
                                                     </select>
                                                 </div>
@@ -1449,110 +1665,187 @@ function Dashboard() {
                 {/* Submissions Tab */}
                 {activeTab === 'submissions' && (
                     <div className="db-content">
-                        {/* Submissions Toolbar */}
-                        <div className="db-blog-toolbar">
-                            <div className="db-blog-search-wrap">
+
+                        {/* Stats Summary Bar */}
+                        <div className="sub-stats-bar">
+                            <div className="sub-stat-item">
+                                <span className="sub-stat-num">{submissions.length}</span>
+                                <span className="sub-stat-label">Total</span>
+                            </div>
+                            <div className="sub-stat-divider" />
+                            <div className="sub-stat-item">
+                                <span className="sub-stat-num new">{submissions.filter(s => (s.status || 'New') === 'New').length}</span>
+                                <span className="sub-stat-label">New</span>
+                            </div>
+                            <div className="sub-stat-divider" />
+                            <div className="sub-stat-item">
+                                <span className="sub-stat-num contacted">{submissions.filter(s => s.status === 'Contacted').length}</span>
+                                <span className="sub-stat-label">Contacted</span>
+                            </div>
+                            <div className="sub-stat-divider" />
+                            <div className="sub-stat-item">
+                                <span className="sub-stat-num won">{submissions.filter(s => s.status === 'Won').length}</span>
+                                <span className="sub-stat-label">Won</span>
+                            </div>
+                            <div className="sub-stat-divider" />
+                            <div className="sub-stat-item">
+                                <span className="sub-stat-num lost">{submissions.filter(s => s.status === 'Lost').length}</span>
+                                <span className="sub-stat-label">Lost</span>
+                            </div>
+                        </div>
+
+                        {/* Toolbar */}
+                        <div className="sub-toolbar">
+                            <div className="db-blog-search-wrap sub-search">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                                 </svg>
-                                <input className="db-blog-search" type="text" placeholder="Search inquiries..." value={submissionSearch} onChange={e => { setSubmissionSearch(e.target.value); setCurrentPage(1); }} />
+                                <input className="db-blog-search" type="text" placeholder="Search by name, email, message..." value={submissionSearch} onChange={e => { setSubmissionSearch(e.target.value); setCurrentPage(1); }} />
                             </div>
-                            <div className="db-submissions-count">
-                                Showing {paginatedSubmissions.length} of {filteredSubmissions.length}
+                            <div className="sub-filter-chips">
+                                {['all', 'New', 'Contacted', 'In Negotiation', 'Won', 'Lost'].map(status => (
+                                    <button
+                                        key={status}
+                                        className={`sub-chip ${submissionStatusFilter === status ? 'active' : ''} sub-chip-${status.toLowerCase().replace(' ', '-')}`}
+                                        onClick={() => { setSubmissionStatusFilter(status); setCurrentPage(1); }}
+                                    >
+                                        {status === 'all' ? 'All' : status}
+                                    </button>
+                                ))}
                             </div>
+                        </div>
+
+                        {/* Result count */}
+                        <div className="sub-result-count">
+                            {filteredSubmissions.length === 0
+                                ? (submissionSearch || submissionStatusFilter !== 'all' ? 'No results found' : '')
+                                : `Showing ${paginatedSubmissions.length} of ${filteredSubmissions.length} inquiries`
+                            }
                         </div>
 
                         {/* Submissions List */}
                         {filteredSubmissions.length === 0 ? (
                             <div className="db-blog-empty">
-                                <div className="db-blog-empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg></div>
+                                <div className="db-blog-empty-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                                    </svg>
+                                </div>
                                 <h3>{submissions.length === 0 ? 'No inquiries yet' : 'No matches found'}</h3>
                                 <p>When people contact you from the website, their details will appear here.</p>
                             </div>
                         ) : (
                             <>
-                                <div className="db-submissions-list">
-                                    {paginatedSubmissions.map(sub => (
-                                        <div key={sub.id} className="db-submission-card">
-                                            <div className="db-sub-header">
-                                                <div className="db-sub-user">
-                                                    <div className="db-sub-avatar">{sub.fullName?.charAt(0).toUpperCase()}</div>
-                                                    <div>
-                                                        <h3>{sub.fullName}</h3>
-                                                        <span className="db-sub-date">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: '4px', display: 'inline-block', verticalAlign: 'middle'}}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>{sub.createdAt?.toDate ? sub.createdAt.toDate().toLocaleString() : 'Just now'}
+                                <div className="sub-cards-grid">
+                                    {paginatedSubmissions.map(sub => {
+                                        const statusColors = {
+                                            'New': { bg: '#eff6ff', border: '#bfdbfe', color: '#2563eb', dot: '#3b82f6' },
+                                            'Contacted': { bg: '#f0fdf4', border: '#bbf7d0', color: '#16a34a', dot: '#22c55e' },
+                                            'In Negotiation': { bg: '#fffbeb', border: '#fde68a', color: '#d97706', dot: '#f59e0b' },
+                                            'Won': { bg: '#f0fdf4', border: '#86efac', color: '#15803d', dot: '#10b981' },
+                                            'Lost': { bg: '#fef2f2', border: '#fecaca', color: '#dc2626', dot: '#ef4444' },
+                                        };
+                                        const sc = statusColors[sub.status || 'New'] || statusColors['New'];
+                                        return (
+                                            <div key={sub.id} className="sub-card">
+                                                {/* Card Top */}
+                                                <div className="sub-card-top">
+                                                    <div className="sub-card-user">
+                                                        <div className="sub-card-avatar">
+                                                            {sub.fullName?.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="sub-card-meta">
+                                                            <h3 className="sub-card-name">{sub.fullName}</h3>
+                                                            <span className="sub-card-time">
+                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: '3px', verticalAlign: 'middle' }}>
+                                                                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                                                                </svg>
+                                                                {sub.createdAt ? new Date(sub.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="sub-card-badges">
+                                                        <span className="sub-status-badge" style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}>
+                                                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sc.dot, display: 'inline-block', marginRight: '5px' }} />
+                                                            {sub.status || 'New'}
                                                         </span>
+                                                        {sub.budget && <span className="sub-budget-badge">{sub.budget}</span>}
+                                                        {/* Action buttons moved to top-right */}
+                                                        <div style={{ display: 'flex', gap: '6px', marginLeft: '8px' }}>
+                                                            <button
+                                                                className="sub-btn-primary"
+                                                                onClick={() => router.push(`/dashboard/submissions/${sub.id}`)}
+                                                                style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                                                            >
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                                View Details
+                                                            </button>
+                                                            <a
+                                                                href={`mailto:${sub.email}`}
+                                                                className="sub-btn-secondary"
+                                                                style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                                                            >
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                                                Reply
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <select 
-                                                        className="db-sub-status-select" 
-                                                        value={sub.status || 'New'} 
-                                                        onChange={(e) => handleUpdateSubmissionStatus(sub.id, e.target.value)}
-                                                        style={{
-                                                            background: 'rgba(0,0,0,0.3)',
-                                                            border: '1px solid rgba(255,255,255,0.1)',
-                                                            borderRadius: '6px',
-                                                            color: '#fff',
-                                                            padding: '4px 8px',
-                                                            fontSize: '0.8rem',
-                                                            outline: 'none',
-                                                            cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        <option value="New">New</option>
-                                                        <option value="Contacted">Contacted</option>
-                                                        <option value="In Negotiation">In Negotiation</option>
-                                                        <option value="Won">Won</option>
-                                                        <option value="Lost">Lost</option>
-                                                    </select>
-                                                    <div className="db-sub-budget">{sub.budget || 'No Budget'}</div>
+
+                                                {/* Contact Info Row */}
+                                                <div className="sub-card-contacts">
+                                                    <div className="sub-contact-item">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                                                        <span>{sub.email}</span>
+                                                    </div>
+                                                    <div className="sub-contact-item">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.67 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.61a16 16 0 0 0 6 6l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+                                                        <span>{sub.whatsapp}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Message Preview */}
+                                                {sub.details && (
+                                                    <p className="sub-card-preview">
+                                                        {sub.details.length > 130 ? `${sub.details.substring(0, 130)}...` : sub.details}
+                                                    </p>
+                                                )}
+
+                                                {/* Footer: status + delete only */}
+                                                <div className="sub-card-footer">
+                                                    <div className="sub-card-right" style={{ marginLeft: 'auto' }}>
+                                                        <select
+                                                            className="sub-status-select"
+                                                            value={sub.status || 'New'}
+                                                            onChange={e => handleUpdateSubmissionStatus(sub.id, e.target.value)}
+                                                        >
+                                                            <option value="New">New</option>
+                                                            <option value="Contacted">Contacted</option>
+                                                            <option value="In Negotiation">In Negotiation</option>
+                                                            <option value="Won">Won</option>
+                                                            <option value="Lost">Lost</option>
+                                                        </select>
+                                                        <button className="sub-btn-delete" onClick={() => handleDeleteSubmission(sub.id)} title="Delete">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="db-sub-info">
-                                                <div className="db-sub-info-item">
-                                                    <strong>Email:</strong> {sub.email}
-                                                </div>
-                                                <div className="db-sub-info-item">
-                                                    <strong>Whatsapp:</strong> {sub.whatsapp}
-                                                </div>
-                                            </div>
-                                            <div className="db-sub-details">
-                                                <p>{sub.details}</p>
-                                            </div>
-                                            <div className="db-sub-actions">
-                                                <a href={`mailto:${sub.email}`} className="db-sub-action-btn reply">Reply via Email</a>
-                                                <button className="db-sub-action-btn delete" onClick={() => handleDeleteSubmission(sub.id)}>Delete</button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                        );
+                                    })}
                                 </div>
 
                                 {/* Pagination */}
                                 {totalPages > 1 && (
                                     <div className="db-pagination">
-                                        <button
-                                            className="db-page-btn"
-                                            disabled={currentPage === 1}
-                                            onClick={() => setCurrentPage(prev => prev - 1)}
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="15 18 9 12 15 6" />
-                                            </svg>
+                                        <button className="db-page-btn" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
                                             Previous
                                         </button>
-                                        <div className="db-page-numbers">
-                                            Page {currentPage} of {totalPages}
-                                        </div>
-                                        <button
-                                            className="db-page-btn"
-                                            disabled={currentPage === totalPages}
-                                            onClick={() => setCurrentPage(prev => prev + 1)}
-                                        >
+                                        <div className="db-page-numbers">Page {currentPage} of {totalPages}</div>
+                                        <button className="db-page-btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
                                             Next
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="9 18 15 12 9 6" />
-                                            </svg>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
                                         </button>
                                     </div>
                                 )}
@@ -1751,27 +2044,7 @@ function Dashboard() {
                 {activeTab === 'settings' && (
                     <div className="db-content">
                         <div className="db-settings-grid">
-                            <div className="db-settings-card">
-                                <div className="db-settings-card-header">
-                                    <div className="db-settings-icon">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                            <polyline points="22,6 12,13 2,6" />
-                                        </svg>
-                                    </div>
-                                    <div><h3>Change Gmail</h3><p>Update your login email address</p></div>
-                                </div>
-                                <div className="db-current-value"><label>Current Gmail</label><span>{currentEmail}</span></div>
-                                <button id="change-email-btn" className="db-change-btn" onClick={() => openChangeModal('email')}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                    Update Gmail
-                                </button>
-                            </div>
-
-                            <div className="db-settings-card">
+                            <div className="db-settings-card full-width">
                                 <div className="db-settings-card-header">
                                     <div className="db-settings-icon">
                                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1779,36 +2052,54 @@ function Dashboard() {
                                             <circle cx="12" cy="7" r="4" />
                                         </svg>
                                     </div>
-                                    <div><h3>Change Author Name</h3><p>Set default author name for blogs</p></div>
-                                </div>
-                                <div className="db-current-value"><label>Current Author Name</label><span>{currentAuthorName}</span></div>
-                                <button id="change-author-name-btn" className="db-change-btn" onClick={() => openChangeModal('authorName')}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                    Update Name
-                                </button>
-                            </div>
-
-                            <div className="db-settings-card">
-                                <div className="db-settings-card-header">
-                                    <div className="db-settings-icon">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                        </svg>
+                                    <div>
+                                        <h3>Account Settings</h3>
+                                        <p>Manage your account credentials, email, and display names</p>
                                     </div>
-                                    <div><h3>Change Password</h3><p>Keep your account secure</p></div>
                                 </div>
-                                <div className="db-current-value"><label>Current Password</label><span>••••••••</span></div>
-                                <button id="change-password-btn" className="db-change-btn" onClick={() => openChangeModal('password')}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                    Update Password
-                                </button>
+                                <div className="db-account-settings-rows" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.06)' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Current Gmail</label>
+                                            <span style={{ fontSize: '0.95rem', fontWeight: '600', color: '#0f172a' }}>{currentEmail}</span>
+                                        </div>
+                                        <button id="change-email-btn" className="db-change-btn" onClick={() => openChangeModal('email')}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                            Update Gmail
+                                        </button>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.06)' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Current Author Name</label>
+                                            <span style={{ fontSize: '0.95rem', fontWeight: '600', color: '#0f172a' }}>{currentAuthorName}</span>
+                                        </div>
+                                        <button id="change-author-name-btn" className="db-change-btn" onClick={() => openChangeModal('authorName')}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                            Update Name
+                                        </button>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.06)' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '2px' }}>Password</label>
+                                            <span style={{ fontSize: '0.95rem', fontWeight: '600', color: '#0f172a' }}>••••••••</span>
+                                        </div>
+                                        <button id="change-password-btn" className="db-change-btn" onClick={() => openChangeModal('password')}>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                            Update Password
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="db-settings-card full-width">
@@ -1909,9 +2200,9 @@ function Dashboard() {
                         </div>
                         {message.text && (
                             <div className={`db-modal-message ${message.type}`}>
-                                message.type === 'success' 
+                                {message.type === 'success' 
                                             ? <span style={{display: 'inline-flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#10b981', fontSize: '1.2rem'}}>✔</span> {message.text}</span> 
-                                            : <span style={{display: 'inline-flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#ef4444', fontSize: '1.2rem'}}>✖</span> {message.text}</span>
+                                            : <span style={{display: 'inline-flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#ef4444', fontSize: '1.2rem'}}>✖</span> {message.text}</span>}
                             </div>
                         )}
                         <form className="db-modal-form" onSubmit={handleUpdate}>
@@ -2066,18 +2357,30 @@ function Dashboard() {
                         <form className="db-modal-form" onSubmit={handleUserSubmit}>
                             <div className="form-group">
                                 <label>Email Address <span className="req">*</span></label>
-                                <input type="email" value={userForm.email} onChange={e => setUserForm(p => ({...p, email: e.target.value}))} placeholder="email@gmail.com" required disabled={!!editingUser} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', color: '#fff', outline: 'none' }} />
+                                <div className="input-wrapper">
+                                    <svg className="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                        <polyline points="22,6 12,13 2,6" />
+                                    </svg>
+                                    <input type="email" value={userForm.email} onChange={e => setUserForm(p => ({...p, email: e.target.value}))} placeholder="email@gmail.com" required disabled={!!editingUser} />
+                                </div>
                             </div>
                             <div className="form-group" style={{ marginTop: '12px' }}>
                                 <label>Password <span className="req">*</span></label>
-                                <input type="password" value={userForm.password} onChange={e => setUserForm(p => ({...p, password: e.target.value}))} placeholder="At least 6 characters" required style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', color: '#fff', outline: 'none' }} />
+                                <div className="input-wrapper">
+                                    <svg className="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
+                                    <input type="password" value={userForm.password} onChange={e => setUserForm(p => ({...p, password: e.target.value}))} placeholder="At least 6 characters" required />
+                                </div>
                             </div>
                             <div className="form-group" style={{ marginTop: '12px' }}>
                                 <label>User Role</label>
-                                <select value={userForm.role} onChange={e => setUserForm(p => ({...p, role: e.target.value}))} style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', color: '#fff', outline: 'none' }}>
-                                    <option value="Super Admin" style={{ background: '#1c1d24' }}>Super Admin</option>
-                                    <option value="Editor" style={{ background: '#1c1d24' }}>Editor</option>
-                                    <option value="Moderator" style={{ background: '#1c1d24' }}>Moderator</option>
+                                <select value={userForm.role} onChange={e => setUserForm(p => ({...p, role: e.target.value}))} style={{ width: '100%', padding: '10px 14px', outline: 'none' }}>
+                                    <option value="Super Admin">Super Admin</option>
+                                    <option value="Editor">Editor</option>
+                                    <option value="Moderator">Moderator</option>
                                 </select>
                             </div>
                             <div className="db-modal-actions" style={{ marginTop: '20px' }}>
@@ -2087,6 +2390,139 @@ function Dashboard() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ======== Submission Details Modal ======== */}
+            {activeSubmissionDetail && (
+                <div className="db-modal-overlay" onClick={() => setActiveSubmissionDetail(null)}>
+                    <div className="db-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
+                        <div className="db-modal-header">
+                            <h3>Inquiry Details</h3>
+                            <button className="db-modal-close" onClick={() => setActiveSubmissionDetail(null)}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div className="db-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                                <div className="db-sub-avatar" style={{ width: '48px', height: '48px', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#6366f1', color: '#fff', borderRadius: '50%' }}>
+                                    {activeSubmissionDetail.fullName?.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#0f172a', margin: '0' }}>{activeSubmissionDetail.fullName}</h4>
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                        Submitted on {new Date(activeSubmissionDetail.createdAt).toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>Email Address</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '0.9rem', color: '#0f172a', wordBreak: 'break-all' }}>{activeSubmissionDetail.email}</span>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(activeSubmissionDetail.email);
+                                                alert('Email copied to clipboard!');
+                                            }}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'inline-flex', color: '#64748b' }}
+                                            title="Copy Email"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>WhatsApp Number</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>{activeSubmissionDetail.whatsapp}</span>
+                                        {activeSubmissionDetail.whatsapp && (
+                                            <a 
+                                                href={`https://wa.me/${activeSubmissionDetail.whatsapp.replace(/[^0-9]/g, '')}`} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'inline-flex', color: '#10b981' }}
+                                                title="Chat on WhatsApp"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.733-1.45L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.859-4.42 9.863-9.864.002-2.637-1.03-5.115-2.905-6.99C16.659 1.875 14.18 .843 11.54.845 6.104.849 1.681 5.27 1.677 10.715c-.001 1.745.474 3.447 1.376 4.973l-.999 3.648 3.73-.978-.137-.091z" />
+                                                </svg>
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>Project Budget</label>
+                                    <span style={{ fontSize: '0.95rem', fontWeight: '600', color: '#6366f1' }}>{activeSubmissionDetail.budget || 'No Budget Specified'}</span>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '4px' }}>Status</label>
+                                    <select 
+                                        value={activeSubmissionDetail.status || 'New'} 
+                                        onChange={(e) => {
+                                            const newStatus = e.target.value;
+                                            handleUpdateSubmissionStatus(activeSubmissionDetail.id, newStatus);
+                                            setActiveSubmissionDetail(prev => ({ ...prev, status: newStatus }));
+                                        }}
+                                        style={{
+                                            background: '#fff',
+                                            border: '1px solid #cbd5e1',
+                                            borderRadius: '6px',
+                                            color: '#0f172a',
+                                            padding: '4px 8px',
+                                            fontSize: '0.85rem',
+                                            outline: 'none',
+                                            cursor: 'pointer',
+                                            width: '100%'
+                                        }}
+                                    >
+                                        <option value="New">New</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="In Negotiation">In Negotiation</option>
+                                        <option value="Won">Won</option>
+                                        <option value="Lost">Lost</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '8px' }}>Project Details & Requirements</label>
+                                <div style={{ 
+                                    background: '#f8fafc', 
+                                    border: '1px solid #e2e8f0', 
+                                    borderRadius: '8px', 
+                                    padding: '12px 16px', 
+                                    fontSize: '0.9rem', 
+                                    lineHeight: '1.6', 
+                                    color: '#334155',
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                    whiteSpace: 'pre-wrap'
+                                }}>
+                                    {activeSubmissionDetail.details}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="db-modal-actions" style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button type="button" className="db-cancel-btn" onClick={() => setActiveSubmissionDetail(null)}>Close Details</button>
+                            <a href={`mailto:${activeSubmissionDetail.email}`} className="db-sub-action-btn reply" style={{ margin: '0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                                Reply via Email
+                            </a>
+                        </div>
                     </div>
                 </div>
             )}

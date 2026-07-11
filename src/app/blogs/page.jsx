@@ -1,7 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { useState } from 'react';
-import { SAMPLE_POSTS, slugify } from './posts';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import './blogs.css';
 import '../about/about.css';
@@ -44,12 +43,29 @@ const itemVariants = {
 
 const CATEGORIES = ['Latest Blogs', 'AI', 'Branding', 'Design', 'Web Design', 'Social Media', 'Strategy'];
 
-// Data imported from ./posts.js
-
 export default function BlogPage() {
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState('Latest Blogs');
     const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                const res = await fetch('/api/blogs');
+                const json = await res.json();
+                if (json.success) {
+                    setPosts(json.data);
+                }
+            } catch (err) {
+                console.error("Error fetching blogs:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPosts();
+    }, []);
 
     const handleCategoryChange = (cat) => {
         setActiveCategory(cat);
@@ -61,10 +77,10 @@ export default function BlogPage() {
         setCurrentPage(1);
     };
 
-    const filtered = SAMPLE_POSTS.filter(p => {
+    const filtered = posts.filter(p => {
         const matchCat = activeCategory === 'Latest Blogs' || p.category === activeCategory;
         const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
-            p.desc.toLowerCase().includes(search.toLowerCase());
+            (p.shortDesc || '').toLowerCase().includes(search.toLowerCase());
         return matchCat && matchSearch;
     });
 
@@ -156,19 +172,25 @@ export default function BlogPage() {
                     </div>
                 </div>
 
-                {/* Cards Grid */}
-                {paginatedPosts.length > 0 ? (
+                {/* Loading state */}
+                {loading ? (
+                    <div className="blogs-loading" style={{ textAlign: 'center', padding: '60px', color: '#fff', fontSize: '18px' }}>
+                        <div className="loading-spinner" style={{ border: '4px solid rgba(255,255,255,0.1)', borderLeft: '4px solid #682EE6', borderRadius: '50%', width: '40px', height: '40px', margin: '0 auto 20px', animation: 'spin 1s linear infinite' }}></div>
+                        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                        <p>Loading blogs...</p>
+                    </div>
+                ) : paginatedPosts.length > 0 ? (
                     <>
                         <div className="blogs-grid">
                             {paginatedPosts.map((post, i) => (
-                                <Link href={`/blogs/${slugify(post.title)}`} key={post.id} className="blogs-card-wrapper" style={{ textDecoration: 'none' }}>
+                                <Link href={`/blogs/${post.slug}`} key={post.id} className="blogs-card-wrapper" style={{ textDecoration: 'none' }}>
                                     <article
                                         className="blogs-card"
                                         style={{ animationDelay: `${i * 0.07}s` }}
                                     >
                                         {/* Card Image / Graphic */}
                                         <div className="blogs-card-thumb">
-                                            <div className="blogs-card-img" style={{ backgroundImage: `url(${post.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                                            <div className="blogs-card-img" style={{ backgroundImage: `url(${post.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                                         </div>
 
                                         {/* Card Body */}

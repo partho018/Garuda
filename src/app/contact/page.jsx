@@ -46,9 +46,7 @@ import logoButtercup from '../../../img/Connect Now/6885eef1a76e2babd6efc174_Log
 import logoCarbobon from '../../../img/Connect Now/6885ef0413f8918ac5356de1_Logo_carbobon_mono.svg';
 import logoCarnesia from '../../../img/Connect Now/6885ef13617c539ba8a284f4_Logo_carnesia_mono.svg';
 
-// Firebase imports
-import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Firebase removed, D1 API used instead
 
 // Framer Motion animation variants
 const containerVariants = {
@@ -292,31 +290,24 @@ export default function ContactUsPage() {
                 body: JSON.stringify(dataToSend),
             });
 
-            // 2. Save to Firebase Firestore for Dashboard
-            const firestorePromise = new Promise(async (resolve, reject) => {
-                const timeoutId = setTimeout(() => resolve({ timeout: true }), 10000); // 10s timeout
-                try {
-                    await addDoc(collection(db, 'contact_submissions'), {
-                        fullName: formData.fullName,
-                        email: formData.email,
-                        whatsapp: formData.whatsapp,
-                        budget: selectedBudget,
-                        details: formData.details,
-                        active: true,
-                        createdAt: serverTimestamp()
-                    });
-                    clearTimeout(timeoutId);
-                    resolve({ success: true });
-                } catch (err) {
-                    clearTimeout(timeoutId);
-                    console.error("Firebase error (possibly unconfigured):", err);
-                    resolve({ error: err }); // Resolve anyway to not block the email flow
-                }
+            // 2. Save to Cloudflare D1 Database via Local API
+            const dbPromise = fetch("/api/contact/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    whatsapp: formData.whatsapp,
+                    budget: selectedBudget,
+                    details: formData.details
+                })
             });
 
-            const [emailResponse] = await Promise.all([emailPromise, firestorePromise]);
+            const [emailResponse, dbResponse] = await Promise.all([emailPromise, dbPromise]);
 
-            if (emailResponse.ok) {
+            if (emailResponse.ok && dbResponse.ok) {
                 setFormStatus({ submitting: false, success: true, error: null });
                 setFormData({ fullName: '', email: '', whatsapp: '', details: '' });
                 setSelectedBudget("");
@@ -326,7 +317,7 @@ export default function ContactUsPage() {
                     setFormStatus(prev => ({ ...prev, success: false }));
                 }, 5000);
             } else {
-                setFormStatus({ submitting: false, success: false, error: "Submission failed (Email service). Please try again." });
+                setFormStatus({ submitting: false, success: false, error: "Submission failed. Please try again." });
             }
         } catch (err) {
             console.error("Submission error:", err);

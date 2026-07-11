@@ -1,13 +1,45 @@
 import '../index.css';
 import '../App.css';
 
-export const metadata = {
-  title: 'Garuda',
-  description: 'Garuda Portfolio',
-  icons: {
-    icon: '/favicon.svg',
-  },
-};
+import { queryRow } from '../lib/db';
+
+export async function generateMetadata() {
+  try {
+    const setting = await queryRow(
+      "SELECT value FROM site_settings WHERE key = 'general'"
+    );
+    
+    let settingsData = {
+      seoTitle: 'Garuda',
+      seoDescription: 'Garuda Portfolio'
+    };
+    
+    if (setting && setting.value) {
+      try {
+        settingsData = JSON.parse(setting.value);
+      } catch (e) {
+        console.error('Failed to parse settings JSON in layout:', e);
+      }
+    }
+    
+    return {
+      title: settingsData.seoTitle || 'Garuda',
+      description: settingsData.seoDescription || 'Garuda Portfolio',
+      icons: {
+        icon: '/favicon.svg',
+      },
+    };
+  } catch (error) {
+    console.error('Failed to fetch settings for layout metadata:', error);
+    return {
+      title: 'Garuda',
+      description: 'Garuda Portfolio',
+      icons: {
+        icon: '/favicon.svg',
+      },
+    };
+  }
+}
 
 export default function RootLayout({ children }) {
   return (

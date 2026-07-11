@@ -1,7 +1,5 @@
 "use client";
 import React, { useState } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const Consultation = ({ cornerGradient, client2 }) => {
     const [selectedBudget, setSelectedBudget] = useState("");
@@ -41,30 +39,31 @@ const Consultation = ({ cornerGradient, client2 }) => {
                 body: JSON.stringify(dataToSend),
             });
 
-            // 2. Save to Firebase Firestore for Dashboard
-            // Added simple timeout to prevent hanging if Firebase is not configured
-            const firestorePromise = new Promise(async (resolve, reject) => {
+            // 2. Save to Cloudflare D1 Database via local API
+            const dbPromise = new Promise(async (resolve) => {
                 const timeoutId = setTimeout(() => resolve({ timeout: true }), 10000); // 10s timeout
                 try {
-                    await addDoc(collection(db, 'contact_submissions'), {
-                        fullName: formData.fullName,
-                        email: formData.email,
-                        whatsapp: formData.whatsapp,
-                        budget: selectedBudget,
-                        details: formData.details,
-                        active: true,
-                        createdAt: serverTimestamp()
+                    const res = await fetch('/api/contact/submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fullName: formData.fullName,
+                            email: formData.email,
+                            whatsapp: formData.whatsapp,
+                            budget: selectedBudget,
+                            details: formData.details
+                        })
                     });
                     clearTimeout(timeoutId);
-                    resolve({ success: true });
+                    resolve({ success: res.ok });
                 } catch (err) {
                     clearTimeout(timeoutId);
-                    console.error("Firebase error (possibly unconfigured):", err);
+                    console.error("D1 database save error:", err);
                     resolve({ error: err }); // Resolve anyway to not block the email flow
                 }
             });
 
-            const [emailResponse] = await Promise.all([emailPromise, firestorePromise]);
+            const [emailResponse] = await Promise.all([emailPromise, dbPromise]);
 
             if (emailResponse.ok) {
                 setFormStatus({ submitting: false, success: true, error: null });

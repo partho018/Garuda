@@ -1,13 +1,20 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 
-export default function TableOfContents() {
+export default function TableOfContents({ headings = [] }) {
+    const tocItems = headings.length > 0 ? headings : [
+        { id: 'introduction', label: 'Introduction' },
+        { id: 'mockups', label: '1. Mockups: Visual Design' },
+        { id: 'prototypes', label: '2. Prototypes: Interaction' },
+        { id: 'conclusion', label: 'Conclusion' }
+    ];
+
     const [activeId, setActiveId] = useState('introduction');
     const [scrollProgress, setScrollProgress] = useState(0);
 
     useEffect(() => {
         // 1. Intersection Observer for active heading detection
-        const headingIds = ['introduction', 'mockups', 'prototypes', 'conclusion'];
+        const headingIds = tocItems.map(h => h.id);
         const elements = headingIds.map(id => document.getElementById(id)).filter(Boolean);
 
         const observerOptions = {
@@ -59,14 +66,7 @@ export default function TableOfContents() {
             observer.disconnect();
             window.removeEventListener('scroll', handleScroll);
         };
-    }, []);
-
-    const tocItems = [
-        { id: 'introduction', label: 'Introduction' },
-        { id: 'mockups', label: '1. Mockups: Visual Design' },
-        { id: 'prototypes', label: '2. Prototypes: Interaction' },
-        { id: 'conclusion', label: 'Conclusion' }
-    ];
+    }, [tocItems]);
 
     const handleClick = (e, id) => {
         e.preventDefault();
@@ -111,3 +111,4 @@ export default function TableOfContents() {
         </div>
     );
 }
+

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
 import './Login.css';
 
 function Login() {
@@ -27,46 +25,28 @@ function Login() {
         setIsLoading(true);
 
         try {
-            // 1. Check Firestore database users
-            const usersRef = collection(db, 'dashboard_users');
-            const q = query(usersRef, where('email', '==', email), where('password', '==', password));
-            const querySnapshot = await getDocs(q);
+            // Check Cloudflare D1 via Local API Route
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
 
-            if (!querySnapshot.empty) {
-                const userDoc = querySnapshot.docs[0].data();
+            const data = await response.json();
+
+            if (response.ok && data.success) {
                 sessionStorage.setItem('dashboard_auth', 'true');
-                sessionStorage.setItem('dashboard_role', userDoc.role || 'Editor');
+                sessionStorage.setItem('dashboard_role', data.user.role || 'Editor');
                 sessionStorage.setItem('dashboard_user_email', email);
                 router.push('/dashboard');
                 setIsLoading(false);
                 return;
             }
 
-            // 2. Fallback to localStorage / default admin credentials
-            const storedEmail = localStorage.getItem('dashboard_email') || 'admin@gmail.com';
-            const storedPassword = localStorage.getItem('dashboard_password') || 'admin123';
-
-            if (email === storedEmail && password === storedPassword) {
-                sessionStorage.setItem('dashboard_auth', 'true');
-                sessionStorage.setItem('dashboard_role', 'Super Admin');
-                sessionStorage.setItem('dashboard_user_email', email);
-                router.push('/dashboard');
-            } else {
-                setError('Incorrect email or password. Please try again.');
-            }
+            setError(data.error || 'Incorrect email or password. Please try again.');
         } catch (err) {
-            console.error("Firestore auth query error, falling back to local credentials:", err);
-            const storedEmail = localStorage.getItem('dashboard_email') || 'admin@gmail.com';
-            const storedPassword = localStorage.getItem('dashboard_password') || 'admin123';
-
-            if (email === storedEmail && password === storedPassword) {
-                sessionStorage.setItem('dashboard_auth', 'true');
-                sessionStorage.setItem('dashboard_role', 'Super Admin');
-                sessionStorage.setItem('dashboard_user_email', email);
-                router.push('/dashboard');
-            } else {
-                setError('Incorrect email or password. Please try again.');
-            }
+            console.error("D1 auth query error:", err);
+            setError('Authentication service is currently unavailable. Please try again later.');
         } finally {
             setIsLoading(false);
         }
