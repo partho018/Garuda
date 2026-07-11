@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { initializeDatabase } from '../../../../lib/db-init.js';
+import { initializeDatabase } from '../../../lib/db-init.js';
 
 // GET /api/init-db  — manually trigger DB initialization (safe to call multiple times)
 export async function GET() {
